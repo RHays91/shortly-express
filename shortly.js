@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -22,19 +23,49 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {}
+}));
+
+var checkUserLogin = function(req, res){
+  res.redirect('/login');
+}
+
+var authenticate = function(user, pass, callback){
+  db.knex('users')
+      .where('username', '=', user)
+      .then(function(res) {
+        if()
+      })
+
+
+
+}
+
 
 app.get('/', 
 function(req, res) {
+  console.log("SESSION ID: ", req.sessionID);
+  // REDIRECT TO LOGIN!!!
+  checkUserLogin(req, res);
+
+  // TEST FOR USER LOGGED IN?
+  // IF NO REDIRECT TO LOGIN 
   res.render('index');
 });
 
 app.get('/create', 
 function(req, res) {
+  checkUserLogin(req, res);
   res.render('index');
 });
 
 app.get('/links', 
 function(req, res) {
+  checkUserLogin(req, res);
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
@@ -79,6 +110,40 @@ function(req, res) {
 /************************************************************/
 
 
+app.get('/login', function(req, res) {
+  console.log("I'M AT THE LOGIN PAGE");
+  // res.redirect('/login');
+  // TEST FOR USER LOGGED IN?
+  // IF NO REDIRECT TO LOGIN 
+  res.render('login');
+});
+
+app.post('/login', function(req, res){
+  authenticate(req.body.username, req.body.password, function(err, user){
+
+
+  });
+
+  // console.log(req.body);
+});
+
+app.post('/signup', function(req, res){
+  // console.log("HEADERS LOCATION : ", res.headers.location);
+  console.log(req.body.username, req.body.password);
+  new User({
+      'username': req.body.username,
+      'password': req.body.password
+    }).save().then(function(){
+      console.log("I'VE POSTED A NEW USER");
+      res.writeHead(201, {location: '/'});
+      res.session
+      res.end()
+    });
+});
+
+
+
+// Is this where our login route should go?
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
