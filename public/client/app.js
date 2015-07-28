@@ -23,7 +23,7 @@ window.Shortly = Backbone.View.extend({
 
   renderIndexView: function(e){
     e && e.preventDefault();
-    this.router.navigate('/', { trigger: true });
+    this.router.navigate('/', { trigger: true }); //LOOK AT THIS FOR RENDERING ALL URLS
   },
 
   renderCreateView: function(e){

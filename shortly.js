@@ -36,6 +36,7 @@ var checkUserLogin = function(req, res){
   if(!req.session.success){
     res.redirect('/login');
   }
+
 }
 
 var authenticate = function(user, pass, callback){
@@ -45,21 +46,23 @@ var authenticate = function(user, pass, callback){
     if(!resp.length) {
       console.log("THERE IS NO USER WITH THAT NAME");
       callback(new Error('Cannot Find User'));
-    } else if(dbUser.password === pass){
-      console.log("CORRECT PASSWORD!");
-      callback(null, dbUser);
-    } else { 
-      console.log("INCORRECT PASSWORD!");
-      callback(new Error('incorrect password'));
+    } else {
+      bcrypt.hash(pass, dbUser.salt, function(err, hash) {
+        if(hash === dbUser.hash){
+          console.log("CORRECT PASSWORD!");
+          callback(null, dbUser);
+        } else {
+          console.log("INCORRECT PASSWORD!");
+          callback(new Error('incorrect password'));
+        }
+      });
     }
   });
-
 }
 
 
-app.get('/', 
-function(req, res) {
-  console.log("SESSION ID: ", req.sessionID);
+app.get('/', function(req, res) {
+  //console.log("SESSION ID: ", req.sessionID);
   // REDIRECT TO LOGIN!!!
   checkUserLogin(req, res);
 
@@ -68,15 +71,19 @@ function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
-function(req, res) {
+app.get('/create', function(req, res) {
   checkUserLogin(req, res);
   res.render('index');
 });
 
-app.get('/links', 
-function(req, res) {
-  checkUserLogin(req, res);
+app.get('/logout', function(req, res){
+  req.session.destroy(function(err){
+    res.redirect('/login');
+  });
+});
+
+app.get('/links', function(req, res) {
+  //checkUserLogin(req, res);
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
@@ -106,6 +113,7 @@ function(req, res) {
           title: title,
           base_url: req.headers.origin
         });
+        console.log("NEW LINK: ", link)
 
         link.save().then(function(newLink) {
           Links.add(newLink);
@@ -163,10 +171,10 @@ app.post('/signup', function(req, res){
             'salt': salt
           }).save().then(function(){
             console.log("I'VE POSTED A NEW USER");
-            res.writeHead(201, {location: '/'});
+            // res.writeHead(201, {location: '/'});
             // res.session
             res.redirect('/');
-            res.end() // POSSIBLY REMOVE THIS LATER
+            // res.end() // POSSIBLY REMOVE THIS LATER
           }); 
       });
   });
