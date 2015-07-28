@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var bcrypt = require('bcrypt');
 
 
 var db = require('./app/config');
@@ -152,15 +153,23 @@ app.post('/login', function(req, res){
 app.post('/signup', function(req, res){
   // console.log("HEADERS LOCATION : ", res.headers.location);
   // console.log(req.body.username, req.body.password);
-  new User({
-      'username': req.body.username,
-      'password': req.body.password
-    }).save().then(function(){
-      console.log("I'VE POSTED A NEW USER");
-      res.writeHead(201, {location: '/'});
-      // res.session
-      res.end()
-    });
+  bcrypt.genSalt(10, function(err, salt) {
+      bcrypt.hash(req.body.password, salt, function(err, hash) {
+          // Store hash in your password DB. 
+        console.log("HASH : ", hash, " SALT: ", salt);
+        new User({
+            'username': req.body.username,
+            'hash': hash,
+            'salt': salt
+          }).save().then(function(){
+            console.log("I'VE POSTED A NEW USER");
+            res.writeHead(201, {location: '/'});
+            // res.session
+            res.redirect('/');
+            res.end() // POSSIBLY REMOVE THIS LATER
+          }); 
+      });
+  });
 });
 
 
