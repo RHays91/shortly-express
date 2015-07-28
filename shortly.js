@@ -31,17 +31,27 @@ app.use(session({
 }));
 
 var checkUserLogin = function(req, res){
-  res.redirect('/login');
+  console.log("SUCCESS? - ", req.session.success);
+  if(!req.session.success){
+    res.redirect('/login');
+  }
 }
 
 var authenticate = function(user, pass, callback){
-  db.knex('users')
-      .where('username', '=', user)
-      .then(function(res) {
-        if()
-      })
-
-
+  db.knex('users').where('username', '=', user).then(function(resp){
+    console.log(resp);
+    dbUser = resp[0];
+    if(!resp.length) {
+      console.log("THERE IS NO USER WITH THAT NAME");
+      callback(new Error('Cannot Find User'));
+    } else if(dbUser.password === pass){
+      console.log("CORRECT PASSWORD!");
+      callback(null, dbUser);
+    } else { 
+      console.log("INCORRECT PASSWORD!");
+      callback(new Error('incorrect password'));
+    }
+  });
 
 }
 
@@ -118,10 +128,22 @@ app.get('/login', function(req, res) {
   res.render('login');
 });
 
+app.get('/signup', function(req, res) {
+  res.render('signup');
+})
+
 app.post('/login', function(req, res){
   authenticate(req.body.username, req.body.password, function(err, user){
-
-
+    if (user){
+      req.session.regenerate(function(){
+        req.session.user = user;
+        req.session.success = 'Authenticated as ' + user.username;
+        res.redirect('/');
+      })
+    } else {
+      req.session.error = "FAILURE FUCK YOU!";
+      res.redirect('/login');
+    }
   });
 
   // console.log(req.body);
@@ -129,14 +151,14 @@ app.post('/login', function(req, res){
 
 app.post('/signup', function(req, res){
   // console.log("HEADERS LOCATION : ", res.headers.location);
-  console.log(req.body.username, req.body.password);
+  // console.log(req.body.username, req.body.password);
   new User({
       'username': req.body.username,
       'password': req.body.password
     }).save().then(function(){
       console.log("I'VE POSTED A NEW USER");
       res.writeHead(201, {location: '/'});
-      res.session
+      // res.session
       res.end()
     });
 });
